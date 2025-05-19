@@ -3,6 +3,10 @@ using GameShopAPI.DbContextData;
 using GameShopAPI.Models.UserModel;
 using GameShopAPI.Models.UserModel.Dto;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace GameShopAPI.Services.Auth
 {
@@ -19,9 +23,27 @@ namespace GameShopAPI.Services.Auth
             _context = context;
         }
 
-        public Task<UserLoginResDto> Login(UserLoginDto request)
+        public async Task<UserLoginResDto> Login(UserLoginDto request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+                if (user is null) throw new InvalidOperationException("Invalid Email");
+                if (!BCrypt.Net.BCrypt.Verify(request.Password, user.Password)) throw new InvalidOperationException("Invalid Password");
+
+                var token = createToken(user);
+
+                var loginRes = new UserLoginResDto
+                {
+                    Username = user.Username,
+                    Email = user.Email,
+                    Token = token
+                };
+                return loginRes;
+            }catch(Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
 
         public async Task<string> Register(UserRegDto request)
@@ -46,6 +68,26 @@ namespace GameShopAPI.Services.Auth
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+        private string createToken(User user)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.Email),
+            };
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                signingCredentials: credentials,
+                expires: DateTime.UtcNow.AddHours(2)
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
