@@ -60,6 +60,27 @@ namespace GameShopAPI.Services.Auth
                 var user = _mapper.Map<User>(request);
                 user.Password = hashpass;
 
+                //handle avatar upload
+                if(request.Avatar != null && request.Avatar.Length > 0)
+                {
+                    var uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars");
+
+                    if(!Directory.Exists(uploadFolder))
+                    {
+                        Directory.CreateDirectory(uploadFolder);
+                    }
+
+                    var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Avatar.FileName)}";
+                    var filePath = Path.Combine(uploadFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await request.Avatar.CopyToAsync(fileStream);
+                    }
+
+                    user.Avatar = $"/avatars/{uniqueFileName}";
+                }
+
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
                 return "User Registered Successfully";

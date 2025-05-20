@@ -17,6 +17,6 @@ namespace GameShopAPI.Models.UserModel.Dto
         [MinLength(8, ErrorMessage = "Password must be atleast 8 characters long")]
         [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@$%*?&])[A-Za-z\d@$!%*?&]{8,}$", ErrorMessage = "Password must contain at least one letter, one number, and one special character.")]
         public string? Password { get; set; }
-        public string? Avatar { get; set; }
+        public IFormFile? Avatar { get; set; }
     }
 }
