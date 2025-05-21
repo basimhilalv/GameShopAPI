@@ -91,7 +91,7 @@ namespace GameShopAPI.Services.Auth
             }
         }
 
-        private string createToken(User user)
+        private string createToken(User)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
